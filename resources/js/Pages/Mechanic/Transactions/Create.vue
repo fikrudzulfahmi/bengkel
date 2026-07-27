@@ -7,9 +7,14 @@ const props = defineProps({
     customers: Array,
     spareparts: Array,
     services: Array,
+    pending_transactions: {
+        type: Array,
+        default: () => []
+    }
 });
 
 const form = useForm({
+    transaction_id: null,
     customer_id: '',
     customer_name: '',
     customer_phone: '',
@@ -20,6 +25,7 @@ const form = useForm({
     notes: '',
     items: [],
     services: [],
+    action: 'complete' // 'draft' or 'complete'
 });
 
 const isNewCustomer = ref(true);
@@ -106,6 +112,67 @@ const selectMotorcycle = () => {
     }
 };
 
+const loadDraft = (draft) => {
+    form.reset();
+    form.transaction_id = draft.id;
+    
+    // Load Customer
+    if (draft.customer_id) {
+        customerSelection.value = draft.customer_id;
+        isNewCustomer.value = false;
+        form.customer_id = draft.customer_id;
+        form.customer_name = draft.customer?.name || '';
+        form.customer_phone = draft.customer?.phone || '';
+    } else {
+        customerSelection.value = 'NEW';
+        isNewCustomer.value = true;
+    }
+    
+    // Load Motorcycle
+    if (draft.motorcycle_id) {
+        motorcycleSelection.value = draft.motorcycle_id;
+        isNewMotorcycle.value = false;
+        form.motorcycle_id = draft.motorcycle_id;
+        form.motorcycle_plate = draft.motorcycle?.plate_number || '';
+        form.motorcycle_type = draft.motorcycle?.type || '';
+    } else {
+        motorcycleSelection.value = 'NEW';
+        isNewMotorcycle.value = true;
+    }
+
+    form.discount = draft.discount || 0;
+    form.notes = draft.notes || '';
+    
+    // Load Details (Spareparts)
+    form.items = draft.details.map(d => ({
+        is_new: false,
+        sparepart_id: d.sparepart_id,
+        name: d.sparepart?.name,
+        price: d.price,
+        qty: d.qty,
+        max_stock: (d.sparepart?.stock || 0) + d.qty // Include existing qty in max stock because we will restore it on backend
+    }));
+    
+    // Load Services
+    form.services = draft.transaction_services.map(s => ({
+        is_new: false,
+        service_id: s.service_id,
+        name: s.service?.name,
+        price: s.price
+    }));
+};
+
+const resetForm = () => {
+    form.reset();
+    form.items = [];
+    form.services = [];
+    form.transaction_id = null;
+    customerSelection.value = 'NEW';
+    motorcycleSelection.value = 'NEW';
+    isNewCustomer.value = true;
+    isNewMotorcycle.value = true;
+};
+
 // SPAREPART
 const addSparepart = (e) => {
     const val = e.target.value;
@@ -122,7 +189,7 @@ const addSparepart = (e) => {
     if (sp) {
         const existing = form.items.find(i => i.sparepart_id === spId && !i.is_new);
         if (existing) {
-            if (existing.qty < sp.stock) existing.qty++;
+            if (existing.qty < existing.max_stock) existing.qty++;
         } else {
             if (sp.stock > 0) {
                 form.items.push({
@@ -254,24 +321,28 @@ const formatRp = (value) => {
     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value);
 };
 
-const submit = () => {
+const submit = (actionType) => {
     if (form.items.length === 0 && form.services.length === 0) {
         alert('Harap pilih minimal 1 Sparepart atau 1 Jasa Servis!');
         return;
     }
 
-    form.post(route('mechanic.transactions.store'), {
+    form.action = actionType;
+
+    const routeName = form.transaction_id 
+        ? route('mechanic.transactions.update', form.transaction_id) 
+        : route('mechanic.transactions.store');
+        
+    const method = form.transaction_id ? 'put' : 'post';
+
+    form[method](routeName, {
         onSuccess: (page) => {
-            if (page.props.flash.transaction_id) {
-                window.open(route('mechanic.transactions.print', page.props.flash.transaction_id), '_blank');
+            if (page.props.flash?.action === 'complete' && page.props.flash?.transaction_id) {
+                // Redirect directly to print route to avoid popup blocker
+                router.get(route('mechanic.transactions.print', page.props.flash.transaction_id));
+            } else {
+                resetForm();
             }
-            form.reset();
-            form.items = [];
-            form.services = [];
-            customerSelection.value = 'NEW';
-            motorcycleSelection.value = 'NEW';
-            isNewCustomer.value = true;
-            isNewMotorcycle.value = true;
         },
     });
 };
@@ -285,20 +356,58 @@ const submit = () => {
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">Kasir & Input Service</h2>
         </template>
 
-        <div class="p-6 md:p-8">
-            <div class="max-w-7xl mx-auto  space-y-6">
+        <div class="p-4 md:p-6 flex flex-col md:flex-row gap-6">
+            
+            <!-- Sidebar Draft -->
+            <div class="w-full md:w-1/4">
+                <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col h-auto max-h-[300px] md:max-h-none md:h-[calc(100vh-140px)]">
+                    <div class="flex justify-between items-center border-b pb-2 mb-4 shrink-0">
+                        <h3 class="text-lg font-bold text-gray-800">Riwayat Draft</h3>
+                        <button @click="resetForm" class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200">Baru</button>
+                    </div>
+                    
+                    <div class="flex-grow overflow-y-auto pr-1">
+                        <div v-if="pending_transactions.length === 0" class="text-center text-sm text-gray-400 mt-10">
+                            Tidak ada draft tersimpan.
+                        </div>
+                        <div v-else class="space-y-3">
+                            <div v-for="draft in pending_transactions" :key="draft.id" 
+                                @click="loadDraft(draft)"
+                                class="border p-3 rounded-lg cursor-pointer transition-colors"
+                                :class="form.transaction_id === draft.id ? 'border-primary bg-red-50' : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50'">
+                                <div class="font-bold text-sm">#TRX-{{ String(draft.id).padStart(6, '0') }}</div>
+                                <div class="text-xs text-gray-600 mt-1 flex justify-between">
+                                    <span>{{ draft.customer?.name || 'Umum' }}</span>
+                                    <span class="font-medium text-black">{{ draft.motorcycle?.plate_number || '-' }}</span>
+                                </div>
+                                <div class="text-xs text-gray-400 mt-2">
+                                    {{ new Date(draft.updated_at).toLocaleString('id-ID') }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form Area -->
+            <div class="w-full md:w-3/4">
                 <!-- Validation Errors (Custom Display) -->
-                <div v-if="Object.keys(form.errors).length > 0" class="bg-red-50 border border-red-200 text-red-600 p-4 rounded-xl">
+                <div v-if="Object.keys(form.errors).length > 0" class="bg-red-50 border border-red-200 text-red-600 p-4 rounded-xl mb-6">
                     <p class="font-bold mb-2">Terjadi Kesalahan:</p>
                     <ul class="list-disc pl-5">
                         <li v-for="(error, key) in form.errors" :key="key">{{ error }}</li>
                     </ul>
                 </div>
 
-                <form @submit.prevent="submit" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <form class="grid grid-cols-1 md:grid-cols-2 gap-6 h-auto md:h-[calc(100vh-140px)]">
                     
                     <!-- Form Customer & Motor -->
-                    <div class="md:col-span-1 space-y-6">
+                    <div class="md:col-span-1 space-y-6 overflow-y-visible md:overflow-y-auto pr-1 pb-4">
+                        <div class="bg-blue-50 border border-blue-200 p-3 rounded-lg flex items-center justify-between" v-if="form.transaction_id">
+                            <span class="text-sm font-semibold text-blue-800">Mengedit Draft: #TRX-{{ String(form.transaction_id).padStart(6, '0') }}</span>
+                            <button type="button" @click="resetForm" class="text-xs text-red-600 hover:underline">Batalkan Edit</button>
+                        </div>
+                        
                         <!-- Customer -->
                         <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
                             <h3 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2">Data Pelanggan</h3>
@@ -349,11 +458,11 @@ const submit = () => {
                     </div>
 
                     <!-- Transaksi Sparepart & Jasa -->
-                    <div class="md:col-span-2 space-y-6">
-                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 h-full flex flex-col">
-                            <h3 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2">Detail Servis & Sparepart</h3>
+                    <div class="md:col-span-1 space-y-6">
+                        <div class="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-gray-100 h-full flex flex-col">
+                            <h3 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2 shrink-0">Detail Servis & Sparepart</h3>
                             
-                            <div class="flex-grow">
+                            <div class="flex-grow overflow-y-visible md:overflow-y-auto pr-1">
                                 
                                 <!-- Jasa Servis -->
                                 <div class="mb-4">
@@ -371,16 +480,16 @@ const submit = () => {
                                     <table class="w-full text-left text-sm">
                                         <thead class="bg-blue-50 border-b">
                                             <tr>
-                                                <th class="p-3">Jasa Servis</th>
-                                                <th class="p-3 text-right">Biaya</th>
-                                                <th class="p-3 text-center w-16"></th>
+                                                <th class="p-2">Jasa Servis</th>
+                                                <th class="p-2 text-right">Biaya</th>
+                                                <th class="p-2 text-center w-8"></th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             <tr v-for="(svc, index) in form.services" :key="index" class="border-b">
-                                                <td class="p-3 font-medium">{{ svc.name }}</td>
-                                                <td class="p-3 text-right font-medium">{{ formatRp(svc.price) }}</td>
-                                                <td class="p-3 text-center">
+                                                <td class="p-2 font-medium">{{ svc.name }}</td>
+                                                <td class="p-2 text-right font-medium">{{ formatRp(svc.price) }}</td>
+                                                <td class="p-2 text-center">
                                                     <button type="button" @click="removeService(index)" class="text-red-500 hover:text-red-700">✖</button>
                                                 </td>
                                             </tr>
@@ -404,22 +513,22 @@ const submit = () => {
                                     <table class="w-full text-left text-sm">
                                         <thead class="bg-gray-50 border-b">
                                             <tr>
-                                                <th class="p-3">Item Sparepart</th>
-                                                <th class="p-3 text-center w-24">Qty</th>
-                                                <th class="p-3 text-right">Harga</th>
-                                                <th class="p-3 text-right">Subtotal</th>
-                                                <th class="p-3 text-center w-16"></th>
+                                                <th class="p-2">Item Sparepart</th>
+                                                <th class="p-2 text-center w-20">Qty</th>
+                                                <th class="p-2 text-right">Harga</th>
+                                                <th class="p-2 text-right">Subtotal</th>
+                                                <th class="p-2 text-center w-8"></th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             <tr v-for="(item, index) in form.items" :key="index" class="border-b">
-                                                <td class="p-3 font-medium">{{ item.name }}</td>
-                                                <td class="p-3">
-                                                    <input type="number" v-model="item.qty" min="1" :max="item.max_stock" class="w-full text-center border-gray-300 rounded p-1">
+                                                <td class="p-2 font-medium">{{ item.name }}</td>
+                                                <td class="p-2">
+                                                    <input type="number" v-model="item.qty" min="1" :max="item.max_stock" class="w-full text-center border-gray-300 rounded p-1 text-sm">
                                                 </td>
-                                                <td class="p-3 text-right text-gray-500">{{ formatRp(item.price) }}</td>
-                                                <td class="p-3 text-right font-medium">{{ formatRp(item.price * item.qty) }}</td>
-                                                <td class="p-3 text-center">
+                                                <td class="p-2 text-right text-gray-500">{{ formatRp(item.price) }}</td>
+                                                <td class="p-2 text-right font-medium">{{ formatRp(item.price * item.qty) }}</td>
+                                                <td class="p-2 text-center">
                                                     <button type="button" @click="removeItem(index)" class="text-red-500 hover:text-red-700">✖</button>
                                                 </td>
                                             </tr>
@@ -436,27 +545,30 @@ const submit = () => {
                                 </div>
                             </div>
                             
-                            <!-- Totals -->
+                            <!-- Totals & Actions -->
                             <div class="border-t pt-4 mt-auto">
-                                <div class="flex justify-between text-gray-600 mb-2">
+                                <div class="flex justify-between text-gray-600 mb-1 text-sm">
                                     <span>Subtotal Jasa Servis:</span>
                                     <span>{{ formatRp(totalService) }}</span>
                                 </div>
-                                <div class="flex justify-between text-gray-600 mb-2">
+                                <div class="flex justify-between text-gray-600 mb-1 text-sm">
                                     <span>Subtotal Sparepart:</span>
                                     <span>{{ formatRp(totalSparepart) }}</span>
                                 </div>
-                                <div class="flex items-center justify-between text-red-600 mb-2 font-medium">
+                                <div class="flex items-center justify-between text-red-600 mb-2 font-medium text-sm">
                                     <span>Diskon / Potongan Harga (Rp):</span>
                                     <input type="number" v-model="form.discount" min="0" class="w-1/3 text-right rounded-md border-gray-300 shadow-sm focus:border-primary sm:text-sm h-8">
                                 </div>
-                                <div class="flex justify-between text-xl font-bold text-gray-900 mt-4 bg-gray-50 p-4 rounded-lg">
+                                <div class="flex justify-between text-lg font-bold text-gray-900 mt-2 bg-gray-50 p-3 rounded-lg">
                                     <span>GRAND TOTAL:</span>
                                     <span>{{ formatRp(grandTotal) }}</span>
                                 </div>
                                 
-                                <div class="mt-6">
-                                    <button type="submit" :disabled="form.processing" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-lg font-medium text-white bg-primary hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors disabled:opacity-50">
+                                <div class="mt-4 flex flex-col gap-2">
+                                    <button type="button" @click="submit('draft')" :disabled="form.processing" class="w-full flex justify-center py-2 px-4 border border-blue-600 rounded-lg shadow-sm text-sm font-medium text-blue-600 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors disabled:opacity-50">
+                                        Simpan Saja (Draft)
+                                    </button>
+                                    <button type="button" @click="submit('complete')" :disabled="form.processing" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-base font-medium text-white bg-primary hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors disabled:opacity-50">
                                         Simpan & Cetak Struk
                                     </button>
                                 </div>

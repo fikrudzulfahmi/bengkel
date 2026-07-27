@@ -27,7 +27,7 @@ class SparepartController extends Controller
             'buy_price' => 'nullable|integer|min:0',
         ]);
 
-        $sparepart = Sparepart::create($request->all());
+        $sparepart = Sparepart::create($request->only(['name', 'stock', 'price', 'buy_price']));
 
         if ($sparepart->stock > 0 && $sparepart->buy_price > 0) {
             $total = $sparepart->stock * $sparepart->buy_price;

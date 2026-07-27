@@ -55,7 +55,7 @@ const formatRp = (value) => {
                                     <td class="p-5 text-right text-red-500 font-medium">{{ formatRp(trx.discount) }}</td>
                                     <td class="p-5 text-right font-extrabold text-gray-900">{{ formatRp(trx.total_price) }}</td>
                                     <td class="p-5 text-center">
-                                        <a :href="route('mechanic.transactions.print', trx.id)" target="_blank" class="inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-lg font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 hover:-translate-y-0.5 hover:shadow-soft focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-all duration-300 ease-in-out">
+                                        <a :href="route('mechanic.transactions.print', trx.id) + '?popup=1'" target="_blank" class="inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-lg font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 hover:-translate-y-0.5 hover:shadow-soft focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-all duration-300 ease-in-out">
                                             Cetak Struk
                                         </a>
                                     </td>

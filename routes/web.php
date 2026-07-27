@@ -34,6 +34,8 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 
     Route::resource('users', \App\Http\Controllers\Admin\UserController::class);
     Route::get('reports', [\App\Http\Controllers\Admin\ReportController::class, 'index'])->name('reports.index');
+    Route::get('reports/print-service', [\App\Http\Controllers\Admin\ReportController::class, 'printService'])->name('reports.print-service');
+    Route::get('reports/print-finance', [\App\Http\Controllers\Admin\ReportController::class, 'printFinance'])->name('reports.print-finance');
     Route::get('journals', [\App\Http\Controllers\Admin\JournalController::class, 'index'])->name('journals.index');
 });
 

@@ -8,6 +8,7 @@ use App\Models\CashBook;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\View;
 
 class ReportController extends Controller
 {
@@ -32,7 +33,10 @@ class ReportController extends Controller
             ->get();
 
         $totalIncomeServis = $transactions->sum('total_price');
-        $totalIncomeLain = $cashBooks->where('type', 'pemasukan')->sum('amount');
+        $pemasukanLain = $cashBooks->filter(function($cb) {
+            return $cb->type === 'pemasukan' && !str_starts_with($cb->description, 'Pendapatan Servis & Sparepart');
+        });
+        $totalIncomeLain = $pemasukanLain->sum('amount');
         $totalPengeluaran = $cashBooks->where('type', 'pengeluaran')->sum('amount');
 
         return Inertia::render('Admin/Reports/Index', [
@@ -49,5 +53,54 @@ class ReportController extends Controller
                 'year' => $year
             ]
         ]);
+    }
+
+    public function printService(Request $request)
+    {
+        $month = $request->get('month', date('m'));
+        $year = $request->get('year', date('Y'));
+
+        $transactions = Transaction::with(['customer', 'motorcycle', 'user', 'transactionServices.service', 'details.sparepart'])
+            ->whereMonth('created_at', $month)
+            ->whereYear('created_at', $year)
+            ->where('status', 'selesai')
+            ->latest()
+            ->get();
+
+        return view('admin.reports.print-service', compact('transactions', 'month', 'year'));
+    }
+
+    public function printFinance(Request $request)
+    {
+        $type = $request->get('type', 'monthly');
+        $month = $request->get('month', date('m'));
+        $year = $request->get('year', date('Y'));
+
+        $queryTransactions = Transaction::where('status', 'selesai');
+        $queryCashBooks = CashBook::query();
+
+        if ($type === 'monthly') {
+            $queryTransactions->whereMonth('created_at', $month)->whereYear('created_at', $year);
+            $queryCashBooks->whereMonth('date', $month)->whereYear('date', $year);
+        } else {
+            $queryTransactions->whereYear('created_at', $year);
+            $queryCashBooks->whereYear('date', $year);
+        }
+
+        $transactions = $queryTransactions->get();
+        $cashBooks = $queryCashBooks->get();
+
+        $totalIncomeServis = $transactions->sum('total_price');
+        $pemasukanLain = $cashBooks->filter(function($cb) {
+            return $cb->type === 'pemasukan' && !str_starts_with($cb->description, 'Pendapatan Servis & Sparepart');
+        });
+        $totalIncomeLain = $pemasukanLain->sum('amount');
+        $totalPengeluaran = $cashBooks->where('type', 'pengeluaran')->sum('amount');
+        $laba = ($totalIncomeServis + $totalIncomeLain) - $totalPengeluaran;
+
+        return view('admin.reports.print-finance', compact(
+            'transactions', 'cashBooks', 'pemasukanLain', 'type', 'month', 'year',
+            'totalIncomeServis', 'totalIncomeLain', 'totalPengeluaran', 'laba'
+        ));
     }
 }

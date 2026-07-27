@@ -10,7 +10,7 @@ const showingNavigationDropdown = ref(false);
 const page = usePage();
 
 const navLinks = [
-    { label: 'Dashboard', route: 'dashboard', active: 'dashboard', roles: ['admin', 'mekanik'] },
+    { label: 'Dashboard', route: 'dashboard', active: '*dashboard', roles: ['admin', 'mekanik'] },
     
     // Admin Links
     { label: 'Mekanik / User', route: 'admin.users.index', active: 'admin.users.*', roles: ['admin'] },

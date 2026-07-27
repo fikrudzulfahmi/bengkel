@@ -33,28 +33,42 @@ const formatRp = (value) => {
         <div class="p-6 md:p-8">
             <div class="max-w-7xl mx-auto  space-y-6">
                 
-                <!-- Filter -->
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center space-x-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Bulan</label>
-                        <select v-model="month" @change="filterData" class="rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm">
-                            <option value="01">Januari</option>
-                            <option value="02">Februari</option>
-                            <option value="03">Maret</option>
-                            <option value="04">April</option>
-                            <option value="05">Mei</option>
-                            <option value="06">Juni</option>
-                            <option value="07">Juli</option>
-                            <option value="08">Agustus</option>
-                            <option value="09">September</option>
-                            <option value="10">Oktober</option>
-                            <option value="11">November</option>
-                            <option value="12">Desember</option>
-                        </select>
+                <!-- Filter and Print Actions -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div class="flex items-center space-x-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Bulan</label>
+                            <select v-model="month" @change="filterData" class="rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm">
+                                <option value="01">Januari</option>
+                                <option value="02">Februari</option>
+                                <option value="03">Maret</option>
+                                <option value="04">April</option>
+                                <option value="05">Mei</option>
+                                <option value="06">Juni</option>
+                                <option value="07">Juli</option>
+                                <option value="08">Agustus</option>
+                                <option value="09">September</option>
+                                <option value="10">Oktober</option>
+                                <option value="11">November</option>
+                                <option value="12">Desember</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Tahun</label>
+                            <input v-model="year" type="number" @change="filterData" class="rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm w-24">
+                        </div>
                     </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Tahun</label>
-                        <input v-model="year" type="number" @change="filterData" class="rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm w-24">
+                    
+                    <div class="flex flex-wrap gap-2">
+                        <a :href="route('admin.reports.print-service', { month: month, year: year })" target="_blank" class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                            Cetak Service Bulanan
+                        </a>
+                        <a :href="route('admin.reports.print-finance', { type: 'monthly', month: month, year: year })" target="_blank" class="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                            Cetak Keuangan Bulanan
+                        </a>
+                        <a :href="route('admin.reports.print-finance', { type: 'yearly', year: year })" target="_blank" class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                            Cetak Keuangan Tahunan
+                        </a>
                     </div>
                 </div>
 
