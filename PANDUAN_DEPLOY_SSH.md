@@ -128,11 +128,12 @@ git push origin main
 Buka SSH Terminal hosting Anda, masuk ke folder project, lalu jalankan:
 
 ```bash
-# 1. Tarik hasil build terbaru dari branch gh-pages
-git pull origin gh-pages
+# 1. Tarik hasil build terbaru dari branch gh-pages (Force Sync)
+git fetch origin gh-pages
+git reset --hard origin/gh-pages
 
 # 2. Jalankan migrasi database & refresh cache (jika ada perubahan DB/Route/Config)
-php artisan migrate --force
+php artisan migrate:fresh --seed
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache
