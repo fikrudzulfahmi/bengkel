@@ -19,6 +19,7 @@ class CashBookController extends Controller
         $year = $request->get('year', date('Y'));
         $userId = auth()->id();
 
+        // Kas mekanik sendiri
         $cashBooks = CashBook::bengkel()
             ->where('user_id', $userId)
             ->whereMonth('date', $month)
@@ -29,6 +30,17 @@ class CashBookController extends Controller
 
         $totalPemasukan = $cashBooks->where('type', 'pemasukan')->sum('amount');
         $totalPengeluaran = $cashBooks->where('type', 'pengeluaran')->sum('amount');
+
+        // Kas bendahara (read-only untuk mekanik)
+        $bendaharaCashBooks = CashBook::bendahara()
+            ->whereMonth('date', $month)
+            ->whereYear('date', $year)
+            ->orderBy('date', 'desc')
+            ->orderBy('id', 'desc')
+            ->get();
+
+        $bendaharaPemasukan = $bendaharaCashBooks->where('type', 'pemasukan')->sum('amount');
+        $bendaharaPengeluaran = $bendaharaCashBooks->where('type', 'pengeluaran')->sum('amount');
 
         // Setoran yang masih pending
         $pendingDeposits = TreasurerDeposit::where('mechanic_id', $userId)
@@ -42,11 +54,7 @@ class CashBookController extends Controller
             ->whereMonth('date', $month)
             ->whereYear('date', $year)
             ->latest()
-            ->get()
-            ->map(function($d) {
-                $d->mechanic_name = $d->mechanic->name ?? '-';
-                return $d;
-            });
+            ->get();
 
         return Inertia::render('Mechanic/CashBooks/Index', [
             'cashBooks' => $cashBooks,
@@ -54,6 +62,12 @@ class CashBookController extends Controller
                 'pemasukan' => $totalPemasukan,
                 'pengeluaran' => $totalPengeluaran,
                 'saldo' => $totalPemasukan - $totalPengeluaran
+            ],
+            'bendaharaCashBooks' => $bendaharaCashBooks,
+            'bendaharaSummary' => [
+                'pemasukan' => $bendaharaPemasukan,
+                'pengeluaran' => $bendaharaPengeluaran,
+                'saldo' => $bendaharaPemasukan - $bendaharaPengeluaran,
             ],
             'filters' => [
                 'month' => $month,

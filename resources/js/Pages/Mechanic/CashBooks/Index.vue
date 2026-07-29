@@ -12,6 +12,8 @@ const props = defineProps({
     filters: Object,
     pendingDeposits: Array,
     depositHistory: Array,
+    bendaharaCashBooks: Array,
+    bendaharaSummary: Object,
 });
 
 const month = ref(props.filters.month);
@@ -36,7 +38,7 @@ const setorForm = useForm({
 
 const showModal = ref(false);
 const showSetorModal = ref(false);
-const activeTab = ref('kas'); // kas, setoran
+const activeTab = ref('kas'); // kas, setoran, bendahara
 
 const formatRp = (value) => {
     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value || 0);
@@ -218,6 +220,11 @@ const depositBadgeType = (s) => {
                             {{ pendingDeposits.length }}
                         </span>
                     </button>
+                    <button @click="activeTab = 'bendahara'"
+                        :class="activeTab === 'bendahara' ? 'bg-emerald-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'"
+                        class="px-5 py-2 text-sm font-medium transition-colors border-l border-gray-200">
+                        Laporan Bendahara
+                    </button>
                 </div>
 
                 <!-- Tab: Kas Harian -->
@@ -318,6 +325,86 @@ const depositBadgeType = (s) => {
                                     </tr>
                                     <tr v-if="depositHistory.length === 0">
                                         <td colspan="5" class="p-8 text-center text-sm text-gray-400">Belum ada riwayat setoran bulan ini.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </Card>
+                </div>
+
+                <!-- Tab: Laporan Kas Bendahara (read-only) -->
+                <div v-if="activeTab === 'bendahara'" class="space-y-6">
+                    <div class="flex items-center gap-3 bg-emerald-50 border border-emerald-200 rounded-2xl p-4">
+                        <div class="w-9 h-9 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 flex-shrink-0">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                        </div>
+                        <div>
+                            <div class="font-semibold text-emerald-800 text-sm">Laporan Kas Bendahara (Hanya Lihat)</div>
+                            <div class="text-xs text-emerald-600 mt-0.5">Data ini dikelola oleh bendahara. Anda hanya dapat melihat saldo dan rinciannya.</div>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <Card>
+                            <div class="flex items-center gap-4">
+                                <div class="p-4 rounded-2xl bg-emerald-50 text-emerald-600">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 11l5-5m0 0l5 5m-5-5v12" /></svg>
+                                </div>
+                                <div>
+                                    <div class="text-gray-500 text-sm font-medium mb-1">Pemasukan Bendahara</div>
+                                    <div class="text-2xl font-bold text-gray-800">{{ formatRp(bendaharaSummary.pemasukan) }}</div>
+                                </div>
+                            </div>
+                        </Card>
+                        <Card>
+                            <div class="flex items-center gap-4">
+                                <div class="p-4 rounded-2xl bg-red-50 text-red-500">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 13l-5 5m0 0l-5-5m5 5V6" /></svg>
+                                </div>
+                                <div>
+                                    <div class="text-gray-500 text-sm font-medium mb-1">Pengeluaran Bendahara</div>
+                                    <div class="text-2xl font-bold text-gray-800">{{ formatRp(bendaharaSummary.pengeluaran) }}</div>
+                                </div>
+                            </div>
+                        </Card>
+                        <Card class="bg-gradient-to-br from-emerald-600 to-teal-600 text-white border-transparent">
+                            <div class="flex items-center gap-4">
+                                <div class="p-4 rounded-2xl bg-white/20 text-white">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                </div>
+                                <div>
+                                    <div class="text-white/80 text-sm font-medium mb-1">Saldo Kas Bendahara</div>
+                                    <div class="text-3xl font-extrabold">{{ formatRp(bendaharaSummary.saldo) }}</div>
+                                </div>
+                            </div>
+                        </Card>
+                    </div>
+                    <Card noPadding>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="bg-emerald-50/50 text-gray-500 text-xs uppercase tracking-wider border-b border-emerald-100">
+                                        <th class="p-5 font-medium">Tanggal</th>
+                                        <th class="p-5 font-medium">Tipe</th>
+                                        <th class="p-5 font-medium">Keterangan</th>
+                                        <th class="p-5 font-medium text-right">Nominal</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-50">
+                                    <tr v-for="cash in bendaharaCashBooks" :key="cash.id" class="hover:bg-emerald-50/30 transition-colors">
+                                        <td class="p-5 text-sm text-gray-600">{{ formatDate(cash.date) }}</td>
+                                        <td class="p-5">
+                                            <Badge :type="cash.type === 'pemasukan' ? 'success' : 'danger'">{{ cash.type }}</Badge>
+                                        </td>
+                                        <td class="p-5 text-sm text-gray-800">{{ cash.description }}</td>
+                                        <td class="p-5 text-right font-semibold text-gray-900">{{ formatRp(cash.amount) }}</td>
+                                    </tr>
+                                    <tr v-if="bendaharaCashBooks.length === 0">
+                                        <td colspan="4" class="p-10 text-center text-gray-500">
+                                            <div class="flex flex-col items-center">
+                                                <svg class="w-12 h-12 text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" /></svg>
+                                                <span class="text-sm">Belum ada catatan kas bendahara bulan ini.</span>
+                                            </div>
+                                        </td>
                                     </tr>
                                 </tbody>
                             </table>

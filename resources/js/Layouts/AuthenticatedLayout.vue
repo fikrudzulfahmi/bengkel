@@ -27,6 +27,7 @@ const navLinks = [
     // Bendahara Links
     { label: 'Buku Kas Bendahara', route: 'bendahara.cash-books.index', active: 'bendahara.cash-books.*', roles: ['bendahara'] },
     { label: 'Verifikasi Setoran', route: 'bendahara.deposits.index', active: 'bendahara.deposits.*', roles: ['bendahara'] },
+    { label: 'Laporan', route: 'bendahara.reports.index', active: 'bendahara.reports.*', roles: ['bendahara'] },
 ];
 
 const hasRole = (roles) => {

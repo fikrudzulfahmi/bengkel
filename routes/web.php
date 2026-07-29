@@ -62,6 +62,8 @@ Route::middleware(['auth', 'role:bendahara'])->prefix('bendahara')->name('bendah
     Route::get('deposits', [\App\Http\Controllers\Bendahara\DepositController::class, 'index'])->name('deposits.index');
     Route::post('deposits/{deposit}/approve', [\App\Http\Controllers\Bendahara\DepositController::class, 'approve'])->name('deposits.approve');
     Route::post('deposits/{deposit}/reject', [\App\Http\Controllers\Bendahara\DepositController::class, 'reject'])->name('deposits.reject');
+    Route::get('reports', [\App\Http\Controllers\Bendahara\ReportController::class, 'index'])->name('reports.index');
+    Route::get('reports/print-finance', [\App\Http\Controllers\Bendahara\ReportController::class, 'printFinance'])->name('reports.print-finance');
 });
 
 require __DIR__.'/auth.php';
