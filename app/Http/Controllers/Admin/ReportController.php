@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Transaction;
 use App\Models\CashBook;
+use App\Models\TreasurerDeposit;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Carbon\Carbon;
@@ -39,6 +40,14 @@ class ReportController extends Controller
         $totalIncomeLain = $pemasukanLain->sum('amount');
         $totalPengeluaran = $cashBooks->where('type', 'pengeluaran')->sum('amount');
 
+        $bendaharaCashBooks = CashBook::bendahara()
+            ->whereMonth('date', $month)
+            ->whereYear('date', $year)
+            ->get();
+        
+        $bendaharaPemasukan = $bendaharaCashBooks->where('type', 'pemasukan')->sum('amount');
+        $bendaharaPengeluaran = $bendaharaCashBooks->where('type', 'pengeluaran')->sum('amount');
+
         return Inertia::render('Admin/Reports/Index', [
             'transactions' => $transactions,
             'cashBooks' => $cashBooks,
@@ -47,6 +56,11 @@ class ReportController extends Controller
                 'income_lain' => $totalIncomeLain,
                 'pengeluaran' => $totalPengeluaran,
                 'laba' => ($totalIncomeServis + $totalIncomeLain) - $totalPengeluaran
+            ],
+            'bendaharaSummary' => [
+                'pemasukan' => $bendaharaPemasukan,
+                'pengeluaran' => $bendaharaPengeluaran,
+                'saldo' => $bendaharaPemasukan - $bendaharaPengeluaran
             ],
             'filters' => [
                 'month' => $month,
@@ -101,6 +115,44 @@ class ReportController extends Controller
         return view('admin.reports.print-finance', compact(
             'transactions', 'cashBooks', 'pemasukanLain', 'type', 'month', 'year',
             'totalIncomeServis', 'totalIncomeLain', 'totalPengeluaran', 'laba'
+        ));
+    }
+
+    public function printBendahara(Request $request)
+    {
+        $type = $request->get('type', 'monthly');
+        $month = $request->get('month', date('m'));
+        $year = $request->get('year', date('Y'));
+
+        $query = CashBook::bendahara()->orderBy('date');
+
+        if ($type === 'monthly') {
+            $query->whereMonth('date', $month)->whereYear('date', $year);
+        } else {
+            $query->whereYear('date', $year);
+        }
+
+        $cashBooks = $query->get();
+
+        $depositQuery = TreasurerDeposit::with('mechanic')->where('status', 'approved');
+        if ($type === 'monthly') {
+            $depositQuery->whereMonth('date', $month)->whereYear('date', $year);
+        } else {
+            $depositQuery->whereYear('date', $year);
+        }
+        $approvedDeposits = $depositQuery->get();
+
+        $pemasukan = $cashBooks->where('type', 'pemasukan');
+        $pengeluaran = $cashBooks->where('type', 'pengeluaran');
+
+        $totalPemasukan = $pemasukan->sum('amount');
+        $totalPengeluaran = $pengeluaran->sum('amount');
+        $saldo = $totalPemasukan - $totalPengeluaran;
+
+        return view('bendahara.reports.print-finance', compact(
+            'cashBooks', 'pemasukan', 'pengeluaran', 'approvedDeposits',
+            'type', 'month', 'year',
+            'totalPemasukan', 'totalPengeluaran', 'saldo'
         ));
     }
 }

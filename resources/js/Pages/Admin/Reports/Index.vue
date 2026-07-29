@@ -7,6 +7,7 @@ const props = defineProps({
     transactions: Array,
     cashBooks: Array,
     summary: Object,
+    bendaharaSummary: Object,
     filters: Object
 });
 
@@ -59,36 +60,85 @@ const formatRp = (value) => {
                         </div>
                     </div>
                     
-                    <div class="flex flex-wrap gap-2">
-                        <a :href="route('admin.reports.print-service', { month: month, year: year })" target="_blank" class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition ease-in-out duration-150">
-                            Cetak Service Bulanan
-                        </a>
-                        <a :href="route('admin.reports.print-finance', { type: 'monthly', month: month, year: year })" target="_blank" class="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition ease-in-out duration-150">
-                            Cetak Keuangan Bulanan
-                        </a>
-                        <a :href="route('admin.reports.print-finance', { type: 'yearly', year: year })" target="_blank" class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
-                            Cetak Keuangan Tahunan
-                        </a>
+                    <div class="flex flex-col gap-3">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <span class="text-xs font-bold text-gray-500 uppercase w-24">Operasional:</span>
+                            <a :href="route('admin.reports.print-service', { month: month, year: year })" target="_blank" class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 transition">
+                                Servis Bulanan
+                            </a>
+                            <a :href="route('admin.reports.print-finance', { type: 'monthly', month: month, year: year })" target="_blank" class="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700 transition">
+                                Keuangan Bulanan
+                            </a>
+                            <a :href="route('admin.reports.print-finance', { type: 'yearly', year: year })" target="_blank" class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 transition">
+                                Keuangan Tahunan
+                            </a>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <span class="text-xs font-bold text-gray-500 uppercase w-24">Bendahara:</span>
+                            <a :href="route('admin.reports.print-bendahara', { type: 'monthly', month: month, year: year })" target="_blank" class="inline-flex items-center px-4 py-2 bg-emerald-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-emerald-700 transition">
+                                Laporan Bulanan
+                            </a>
+                            <a :href="route('admin.reports.print-bendahara', { type: 'yearly', year: year })" target="_blank" class="inline-flex items-center px-4 py-2 bg-teal-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-teal-700 transition">
+                                Laporan Tahunan
+                            </a>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Summary Cards -->
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                        <div class="text-gray-500 text-sm font-medium mb-1">Pendapatan Servis</div>
-                        <div class="text-2xl font-bold text-gray-800">{{ formatRp(summary.income_servis) }}</div>
+                <!-- Summary Cards Operasional -->
+                <div>
+                    <h3 class="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3">Ringkasan Operasional (Mekanik/Kasir)</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                            <div class="text-gray-500 text-sm font-medium mb-1">Pendapatan Servis</div>
+                            <div class="text-2xl font-bold text-gray-800">{{ formatRp(summary.income_servis) }}</div>
+                        </div>
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                            <div class="text-gray-500 text-sm font-medium mb-1">Pemasukan Lain</div>
+                            <div class="text-2xl font-bold text-gray-800">{{ formatRp(summary.income_lain) }}</div>
+                        </div>
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                            <div class="text-gray-500 text-sm font-medium mb-1">Pengeluaran Operasional</div>
+                            <div class="text-2xl font-bold text-red-600">{{ formatRp(summary.pengeluaran) }}</div>
+                        </div>
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 bg-gradient-to-br from-primary to-secondary text-white">
+                            <div class="text-red-100 text-sm font-medium mb-1">Laba Bersih</div>
+                            <div class="text-3xl font-extrabold">{{ formatRp(summary.laba) }}</div>
+                        </div>
                     </div>
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                        <div class="text-gray-500 text-sm font-medium mb-1">Pemasukan Lain</div>
-                        <div class="text-2xl font-bold text-gray-800">{{ formatRp(summary.income_lain) }}</div>
-                    </div>
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                        <div class="text-gray-500 text-sm font-medium mb-1">Pengeluaran Operasional</div>
-                        <div class="text-2xl font-bold text-red-600">{{ formatRp(summary.pengeluaran) }}</div>
-                    </div>
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 bg-gradient-to-br from-primary to-secondary text-white">
-                        <div class="text-red-100 text-sm font-medium mb-1">Laba Bersih</div>
-                        <div class="text-3xl font-extrabold">{{ formatRp(summary.laba) }}</div>
+                </div>
+
+                <!-- Summary Cards Bendahara -->
+                <div>
+                    <h3 class="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3">Ringkasan Kas Bendahara</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-emerald-100 flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 11l5-5m0 0l5 5m-5-5v12" /></svg>
+                            </div>
+                            <div>
+                                <div class="text-gray-500 text-sm font-medium mb-1">Total Pemasukan</div>
+                                <div class="text-2xl font-bold text-emerald-700">{{ formatRp(bendaharaSummary.pemasukan) }}</div>
+                            </div>
+                        </div>
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-red-100 flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-xl bg-red-50 text-red-600 flex items-center justify-center">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 13l-5 5m0 0l-5-5m5 5V6" /></svg>
+                            </div>
+                            <div>
+                                <div class="text-gray-500 text-sm font-medium mb-1">Total Pengeluaran</div>
+                                <div class="text-2xl font-bold text-red-600">{{ formatRp(bendaharaSummary.pengeluaran) }}</div>
+                            </div>
+                        </div>
+                        <div class="bg-gradient-to-br from-emerald-600 to-teal-600 p-6 rounded-2xl shadow-sm text-white flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                            </div>
+                            <div>
+                                <div class="text-emerald-100 text-sm font-medium mb-1">Saldo Akhir Bendahara</div>
+                                <div class="text-3xl font-extrabold">{{ formatRp(bendaharaSummary.saldo) }}</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
