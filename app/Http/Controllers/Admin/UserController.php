@@ -25,7 +25,7 @@ class UserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => ['required', Rules\Password::defaults()],
-            'role' => 'required|in:admin,mekanik',
+            'role' => 'required|in:admin,mekanik,bendahara',
         ]);
 
         User::create([
@@ -43,7 +43,7 @@ class UserController extends Controller
         $rules = [
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users,email,'.$user->id,
-            'role' => 'required|in:admin,mekanik',
+            'role' => 'required|in:admin,mekanik,bendahara',
         ];
 
         if ($request->filled('password')) {

@@ -10,7 +10,7 @@ const showingNavigationDropdown = ref(false);
 const page = usePage();
 
 const navLinks = [
-    { label: 'Dashboard', route: 'dashboard', active: '*dashboard', roles: ['admin', 'mekanik'] },
+    { label: 'Dashboard', route: 'dashboard', active: '*dashboard', roles: ['admin', 'mekanik', 'bendahara'] },
     
     // Admin Links
     { label: 'Mekanik / User', route: 'admin.users.index', active: 'admin.users.*', roles: ['admin'] },
@@ -23,6 +23,10 @@ const navLinks = [
     { label: 'Kelola Sparepart', route: 'mechanic.spareparts.index', active: 'mechanic.spareparts.*', roles: ['mekanik'] },
     { label: 'Buku Kas', route: 'mechanic.cash-books.index', active: 'mechanic.cash-books.*', roles: ['mekanik'] },
     { label: 'Jurnal Harian', route: 'mechanic.journals.index', active: 'mechanic.journals.*', roles: ['mekanik'] },
+
+    // Bendahara Links
+    { label: 'Buku Kas Bendahara', route: 'bendahara.cash-books.index', active: 'bendahara.cash-books.*', roles: ['bendahara'] },
+    { label: 'Verifikasi Setoran', route: 'bendahara.deposits.index', active: 'bendahara.deposits.*', roles: ['bendahara'] },
 ];
 
 const hasRole = (roles) => {

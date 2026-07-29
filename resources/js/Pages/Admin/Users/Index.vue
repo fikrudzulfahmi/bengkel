@@ -92,7 +92,7 @@ const deleteUser = (id) => {
                                     <td class="p-5 text-gray-800 font-medium">{{ user.name }}</td>
                                     <td class="p-5 text-gray-500 text-sm">{{ user.email }}</td>
                                     <td class="p-5">
-                                        <Badge :type="user.role === 'admin' ? 'primary' : 'info'">
+                                        <Badge :type="user.role === 'admin' ? 'primary' : user.role === 'bendahara' ? 'warning' : 'info'">
                                             {{ user.role }}
                                         </Badge>
                                     </td>
@@ -142,6 +142,7 @@ const deleteUser = (id) => {
                                             <select v-model="form.role" class="mt-1.5 block w-full rounded-lg border-gray-200 shadow-sm focus:border-primary focus:ring-primary sm:text-sm transition-colors">
                                                 <option value="admin">Admin</option>
                                                 <option value="mekanik">Mekanik</option>
+                                                <option value="bendahara">Bendahara</option>
                                             </select>
                                             <div v-if="form.errors.role" class="text-red-500 text-xs mt-1.5">{{ form.errors.role }}</div>
                                         </div>

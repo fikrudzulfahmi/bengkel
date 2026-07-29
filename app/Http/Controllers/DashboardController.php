@@ -9,6 +9,7 @@ use App\Models\Transaction;
 use App\Models\User;
 use App\Models\ActivityLog;
 use App\Models\Sparepart;
+use App\Models\TreasurerDeposit;
 use Carbon\Carbon;
 
 class DashboardController extends Controller
@@ -74,6 +75,42 @@ class DashboardController extends Controller
             ],
             'lowStockSpareparts' => $lowStockSpareparts,
             'recentActivities' => $recentActivities
+        ]);
+    }
+
+    public function bendahara()
+    {
+        $month = date('m');
+        $year = date('Y');
+
+        $totalPemasukan = CashBook::bendahara()
+            ->where('type', 'pemasukan')
+            ->whereMonth('date', $month)
+            ->whereYear('date', $year)
+            ->sum('amount');
+
+        $totalPengeluaran = CashBook::bendahara()
+            ->where('type', 'pengeluaran')
+            ->whereMonth('date', $month)
+            ->whereYear('date', $year)
+            ->sum('amount');
+
+        $pendingDeposits = TreasurerDeposit::pending()->with('mechanic')->latest()->get();
+
+        $recentActivities = ActivityLog::with('user')
+            ->orderBy('created_at', 'desc')
+            ->take(8)
+            ->get();
+
+        return Inertia::render('Bendahara/Dashboard', [
+            'metrics' => [
+                'pemasukan_bulan' => $totalPemasukan,
+                'pengeluaran_bulan' => $totalPengeluaran,
+                'saldo_bulan' => $totalPemasukan - $totalPengeluaran,
+                'pending_deposits' => $pendingDeposits->count(),
+            ],
+            'pendingDeposits' => $pendingDeposits,
+            'recentActivities' => $recentActivities,
         ]);
     }
 }

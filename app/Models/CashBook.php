@@ -15,4 +15,14 @@ class CashBook extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    public function scopeBengkel($query)
+    {
+        return $query->where('category', 'bengkel');
+    }
+
+    public function scopeBendahara($query)
+    {
+        return $query->where('category', 'bendahara');
+    }
 }

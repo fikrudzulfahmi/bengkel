@@ -29,5 +29,12 @@ class DatabaseSeeder extends Seeder
             'password' => Hash::make('password'),
             'role' => 'mekanik',
         ]);
+
+        User::create([
+            'name' => 'Bendahara Utama',
+            'email' => 'bendahara@smekisa.com',
+            'password' => Hash::make('password'),
+            'role' => 'bendahara',
+        ]);
     }
 }

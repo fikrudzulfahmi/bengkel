@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Mechanic;
 use App\Http\Controllers\Controller;
 use App\Models\CashBook;
 use App\Models\ActivityLog;
+use App\Models\TreasurerDeposit;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Carbon\Carbon;
@@ -15,8 +17,11 @@ class CashBookController extends Controller
     {
         $month = $request->get('month', date('m'));
         $year = $request->get('year', date('Y'));
+        $userId = auth()->id();
 
-        $cashBooks = CashBook::whereMonth('date', $month)
+        $cashBooks = CashBook::bengkel()
+            ->where('user_id', $userId)
+            ->whereMonth('date', $month)
             ->whereYear('date', $year)
             ->orderBy('date', 'desc')
             ->orderBy('id', 'desc')
@@ -24,6 +29,24 @@ class CashBookController extends Controller
 
         $totalPemasukan = $cashBooks->where('type', 'pemasukan')->sum('amount');
         $totalPengeluaran = $cashBooks->where('type', 'pengeluaran')->sum('amount');
+
+        // Setoran yang masih pending
+        $pendingDeposits = TreasurerDeposit::where('mechanic_id', $userId)
+            ->where('status', 'pending')
+            ->latest()
+            ->get();
+
+        // History setoran
+        $depositHistory = TreasurerDeposit::where('mechanic_id', $userId)
+            ->whereIn('status', ['approved', 'rejected'])
+            ->whereMonth('date', $month)
+            ->whereYear('date', $year)
+            ->latest()
+            ->get()
+            ->map(function($d) {
+                $d->mechanic_name = $d->mechanic->name ?? '-';
+                return $d;
+            });
 
         return Inertia::render('Mechanic/CashBooks/Index', [
             'cashBooks' => $cashBooks,
@@ -35,7 +58,9 @@ class CashBookController extends Controller
             'filters' => [
                 'month' => $month,
                 'year' => $year
-            ]
+            ],
+            'pendingDeposits' => $pendingDeposits,
+            'depositHistory' => $depositHistory,
         ]);
     }
 
@@ -50,6 +75,7 @@ class CashBookController extends Controller
 
         CashBook::create([
             'user_id' => auth()->id(),
+            'category' => 'bengkel',
             'type' => $request->type,
             'amount' => $request->amount,
             'description' => $request->description,
@@ -77,5 +103,33 @@ class CashBookController extends Controller
         ]);
 
         return back()->with('success', 'Catatan buku kas berhasil dihapus.');
+    }
+
+    /**
+     * Mekanik mengajukan setoran ke bendahara (status: pending)
+     */
+    public function setorBendahara(Request $request)
+    {
+        $request->validate([
+            'amount' => 'required|integer|min:1',
+            'description' => 'required|string',
+            'date' => 'required|date',
+        ]);
+
+        TreasurerDeposit::create([
+            'mechanic_id' => auth()->id(),
+            'amount' => $request->amount,
+            'description' => $request->description,
+            'date' => $request->date,
+            'status' => 'pending',
+        ]);
+
+        ActivityLog::create([
+            'user_id' => auth()->id(),
+            'action' => 'Ajukan Setoran ke Bendahara',
+            'description' => "Mengajukan setoran ke bendahara sebesar Rp" . number_format($request->amount, 0, ',', '.') . ": {$request->description}"
+        ]);
+
+        return back()->with('success', 'Pengajuan setoran berhasil dikirim. Menunggu verifikasi bendahara.');
     }
 }
